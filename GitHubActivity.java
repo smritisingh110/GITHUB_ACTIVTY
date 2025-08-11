@@ -26,22 +26,25 @@ public class GitHubActivity {
     private static final int TIMEOUT = 10000; // 10 seconds
     
     public static void main(String[] args) {
-        if (args.length != 1) {
-            System.out.println("Usage: java GitHubActivity <username>");
-            System.out.println("Example: java GitHubActivity kamranahmedse");
+        if (args.length < 1 || args.length > 2) {
+            System.out.println("Usage: java GitHubActivity <username> [token]");
+            System.out.println("Example: java GitHubActivity kamranahmedse <token>");
             System.exit(1);
         }
-        
+
         String username = args[0].trim();
         if (username.isEmpty()) {
             System.out.println("Error: Username cannot be empty");
             System.exit(1);
         }
-        
+
+        // Accept token as argument or from environment variable
+        String token = args.length == 2 ? args[1] : System.getenv("GITHUB_TOKEN");
+
         GitHubActivity cli = new GitHubActivity();
         try {
             System.out.println("Fetching activity for GitHub user: " + username + "...");
-            String jsonResponse = cli.fetchUserActivity(username);
+            String jsonResponse = cli.fetchUserActivity(username, token);
             List<String> activities = cli.parseAndFormatActivity(jsonResponse);
             cli.displayActivity(username, activities);
         } catch (Exception e) {
@@ -56,30 +59,33 @@ public class GitHubActivity {
      * @return JSON response as string
      * @throws Exception if request fails
      */
-    public String fetchUserActivity(String username) throws Exception {
+    public String fetchUserActivity(String username, String token) throws Exception {
         String urlString = String.format(BASE_URL, username);
         URL url;
-        
+
         try {
             URI uri = new URI(urlString);
             url = uri.toURL();
         } catch (URISyntaxException e) {
             throw new Exception("Invalid URL: " + e.getMessage());
         }
-        
+
         HttpURLConnection connection = null;
         BufferedReader reader = null;
-        
+
         try {
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setRequestProperty("User-Agent", USER_AGENT);
             connection.setRequestProperty("Accept", "application/vnd.github.v3+json");
+            if (token != null && !token.isEmpty()) {
+                connection.setRequestProperty("Authorization", "Bearer " + token);
+            }
             connection.setConnectTimeout(TIMEOUT);
             connection.setReadTimeout(TIMEOUT);
-            
+
             int responseCode = connection.getResponseCode();
-            
+
             if (responseCode == 404) {
                 throw new Exception("User '" + username + "' not found");
             } else if (responseCode == 403) {
@@ -87,17 +93,17 @@ public class GitHubActivity {
             } else if (responseCode != 200) {
                 throw new Exception("GitHub API error: HTTP " + responseCode);
             }
-            
+
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             StringBuilder response = new StringBuilder();
             String line;
-            
+
             while ((line = reader.readLine()) != null) {
                 response.append(line);
             }
-            
+
             return response.toString();
-            
+
         } catch (IOException e) {
             throw new Exception("Network error: " + e.getMessage());
         } finally {
