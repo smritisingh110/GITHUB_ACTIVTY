@@ -14,6 +14,11 @@ import java.util.regex.Pattern;
  * GitHub Activity CLI - Fetch and display recent GitHub user activity
  * Usage: java GitHubActivity <username>
  */
+
+ /*
+  * 
+  I add this just for commit test 
+  */
 public class GitHubActivity {
     
     private static final String BASE_URL = "https://api.github.com/users/%s/events";
