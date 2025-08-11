@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 
  /*
   * 
-  I add this just for commit test 
+  I add this just for commit test Hello
   */
 public class GitHubActivity {
     
